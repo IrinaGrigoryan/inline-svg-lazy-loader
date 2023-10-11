@@ -1,6 +1,6 @@
 {
   "name": "inline-svg-lazy-loader",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "license": "MIT",
   "description": "Lazy loader for inline svg",
   "homepage": "https://github.com/IrinaGrigoryan/inline-svg-lazy-loader/blob/main/README.md",
