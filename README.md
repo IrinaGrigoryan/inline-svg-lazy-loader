@@ -1,7 +1,11 @@
 # Inline Svg Lazy Loader
+[![NPM](https://img.shields.io/npm/v/inline-svg-lazy-loader.svg)](https://www.npmjs.com/package/inline-svg-lazy-loader)
+
 Inline Svg Lazy Loader is a small weight JS library for improving performance of inline svg images.
 
-Plugin takes an `<img>` with special class name and attributes and swap it on an inline `<svg>`. 
+Plugin use [The Intersection Observer API](https://developer.mozilla.org/en-US/docs/Web/API/Intersection_Observer_API) to detect what svg is currently in viewport and after fetch it from link in `data-src`.
+
+It takes an `<img>` with special class name and attributes and swap it on an inline `<svg>`. 
 In this case you have possibility to change the styles of it with CSS/JS, manipulate hover/focus states, use CSS variables etc.
 
 ## How to use
