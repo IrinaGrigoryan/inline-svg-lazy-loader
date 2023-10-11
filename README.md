@@ -8,12 +8,18 @@ In this case you have possibility to change the styles of it with CSS/JS, manipu
 
 ### Download and Include in HTML
 
-In dist folder you can find minified version of plugin. Include it in your HTML file and create new instance.
+In dist folder you can find minified version of plugin. Download it and include in your HTML file or connect it via CDN. After, create new instance.
 Use <img> tag with special class name `js-lazy-inline-svg` and attributes.
 
 ```html
 <script type="module" src="../dist/inline-svg-lazy-loader.min.js"></script>
 
+OR
+
+<script type="module" src="https://unpkg.com/inline-svg-lazy-loader@1.0.0/dist/inline-svg-lazy-loader.min.js"></script>
+
+```
+```html
 <script type="module">
     const _ = new window.InlineSvgLazyLoader();
 </script>
@@ -27,6 +33,8 @@ Use <img> tag with special class name `js-lazy-inline-svg` and attributes.
         alt
 >
 ```
+
+[**Demo →**](https://codepen.io/Irina-Grigoryan-the-scripter/pen/RwEdaLg)
 
 ### Install via NPM
 
