@@ -1,6 +1,12 @@
 export default class InlineSvgLazyLoader {
-    constructor(selector = 'js-lazy-inline-svg', options = null) {
-        this.selector = selector;
+    /**
+     * Create InlineSvgLazyLoader instance.
+     * @param {(String|HTMLElement)} element - element to initialize plugin
+     * @param {Object} options - plugin options
+     */
+    constructor(element = 'js-lazy-inline-svg', options = null) {
+        this.element = element;
+        this.inlineSvg = null;
         this.options = options || {
             loadingClass: 'js-svg-loading',
         }
@@ -8,51 +14,56 @@ export default class InlineSvgLazyLoader {
             threshold: [0.1]
         };
 
-        this.init();
+        this.checkBeforeInit();
+    }
+
+    /**
+     * Check before initializing plugin
+     */
+    checkBeforeInit() {
+        if (typeof this.element === 'string') {
+            const elements = [...document.querySelectorAll(`.${this.element}`)];
+
+            if (elements) {
+                elements.forEach(el => new InlineSvgLazyLoader(el, this.options));
+            }
+        } else {
+            this.init();
+        }
     }
 
     /**
      * Init plugin
      */
     init() {
-        this.elements = [...document.querySelectorAll(`.${this.selector}`)];
-
-        if (!this.elements.length) {
-            return;
-        }
-
-        this.elements.forEach(element => {
-            this.addInlineSvgObserver(element);
-        });
+        this.addInlineSvgObserver();
     }
 
     /**
-     * Add observer for inline svg
-     * @param {HTMLElement} element - image element
+     * Add observer for image
      */
-    addInlineSvgObserver(element) {
+    addInlineSvgObserver() {
         const svgObserver = new IntersectionObserver(entries => {
             entries.forEach(entry => {
-                const { isIntersecting, target } = entry;
+                const { isIntersecting } = entry;
                 if (isIntersecting) {
-                    this.getSvg(target);
-                    svgObserver.unobserve(target);
+                    this.getSvg();
+                    svgObserver.unobserve(this.element);
                 }
             });
         }, this.observerOptions);
 
-        svgObserver.observe(element);
+        svgObserver.observe(this.element);
     }
 
     /**
      * Get external or internal SVG
-     * @param {HTMLElement} imageEl - image element
      */
-    async getSvg(imageEl) {
-        const { src } = imageEl.dataset;
+    async getSvg() {
+        const { src } = this.element.dataset;
         const { loadingClass } = this.options;
 
-        imageEl.classList.add(loadingClass);
+        this.element.classList.add(loadingClass);
 
         try {
             const response = await fetch(src);
@@ -60,27 +71,27 @@ export default class InlineSvgLazyLoader {
             if (response.ok) {
                 const resultSvg = await response.text();
 
-                this.replaceImgWithSvg(resultSvg, imageEl);
+                this.inlineSvg = this.parseSvgStringToHtml(resultSvg);
+                this.replaceImgWithSvg();
             }
         } catch (error) {
             console.error(error);
+        } finally {
+            this.element.classList.remove(loadingClass);
         }
     }
 
     /**
      * Replace image with SVG
-     * @param {string} svgString - SVG string
-     * @param {HTMLElement} imageEl - image element
      */
-    replaceImgWithSvg(svgString, imageEl) {
-        const inlineSvg = this.parseSvgStringToHtml(svgString);
-        this.removeAttrs(inlineSvg, imageEl);
-        this.removeScripts(inlineSvg, imageEl);
-        this.addAttrs(inlineSvg, imageEl);
-        this.setSvgSize(inlineSvg, imageEl);
+    replaceImgWithSvg() {
+        this.removeAttrs();
+        this.removeScripts();
+        this.addAttrs();
+        this.setSvgSize();
 
-        if (imageEl.parentNode) {
-            imageEl.parentNode.replaceChild(inlineSvg, imageEl);
+        if (this.element.parentNode) {
+            this.element.parentNode.replaceChild(this.inlineSvg, this.element);
         }
     }
 
@@ -96,29 +107,25 @@ export default class InlineSvgLazyLoader {
 
     /**
      * Remove extra attributes from SVG
-     * @param {SVGSVGElement} svg - SVG element
-     * @param {HTMLElement} imageEl - image element
      */
-    removeAttrs(svg, imageEl) {
-        const { removeAttrs } = imageEl.dataset;
+    removeAttrs() {
+        const { removeAttrs } = this.element.dataset;
 
         if (removeAttrs) {
             const attrsArray = removeAttrs.split(',');
 
             attrsArray.forEach(attr => {
                 const attrName = attr.trim();
-                svg.removeAttribute(attrName);
+                this.inlineSvg.removeAttribute(attrName);
             });
         }
     }
 
     /**
      * Set additional attributes for SVG
-     * @param {SVGSVGElement} svg - SVG element
-     * @param {HTMLElement} imageEl - image element
      */
-    addAttrs(svg, imageEl) {
-        const { addAttrs } = imageEl.dataset;
+    addAttrs() {
+        const { addAttrs } = this.element.dataset;
 
         if (addAttrs) {
             const attrsWithoutExtraSymbols = /([\w\d\-\s*]+):\s*[\w\d\-\s*]+/g;
@@ -126,36 +133,33 @@ export default class InlineSvgLazyLoader {
 
             attrsArray.forEach(attr => {
                 const [attrName, attrValue] = attr.split(':');
-                svg.setAttribute(attrName.trim(), attrValue.trim());
+                this.inlineSvg.setAttribute(attrName.trim(), attrValue.trim());
             });
         }
     }
 
     /**
      * Set SVG size from img data attributes
-     * @param {SVGSVGElement} svg - SVG element
-     * @param {HTMLElement} imageEl - image element
      */
-    setSvgSize(svg, imageEl) {
-        const { setSvgSize } = imageEl.dataset;
+    setSvgSize() {
+        const { setSvgSize } = this.element.dataset;
 
         if (setSvgSize) {
-            svg.setAttribute('width', imageEl.width);
-            svg.setAttribute('height', imageEl.height);
+            ['width', 'height'].forEach(size => {
+                this.inlineSvg.setAttribute(size, this.element[size]);
+            });
         }
     }
 
     /**
      * Remove JS scripts from SVG
-     * @param {SVGSVGElement} svg - SVG element
-     * @param {HTMLElement} imageEl - image element
      */
-    removeScripts(svg, imageEl) {
-        const { removeScripts } = imageEl.dataset;
+    removeScripts() {
+        const { removeScripts } = this.element.dataset;
 
         if (removeScripts) {
-            const scriptsArray= svg.querySelectorAll('script');
-            const svgAttrs = svg.getAttributeNames();
+            const scriptsArray= this.inlineSvg.querySelectorAll('script');
+            const svgAttrs = this.inlineSvg.getAttributeNames();
 
             scriptsArray.forEach(script => {
                 script.remove();
@@ -166,7 +170,7 @@ export default class InlineSvgLazyLoader {
 
                 svgAttrs.forEach(attr => {
                     if (attr.match(attrsStartedFromOn)) {
-                        svg.removeAttribute(attr);
+                        this.inlineSvg.removeAttribute(attr);
                     }
                 });
             }
